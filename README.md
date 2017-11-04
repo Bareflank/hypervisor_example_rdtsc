@@ -1,10 +1,9 @@
-# Bareflank Hypervisor CPUID Count Example
+# Bareflank Hypervisor RDTSC Example
 
 ## Description
 
-This example demonstrates how to extend the Bareflank hypervisor to print
-the number of CPUID instructions that have executed from when the hypervisor
-was started, to when it was stopped. For more information on how Bareflank
+This example demonstrates how to extend the Bareflank hypervisor to
+emulate the RDTSC instruction. For more information on how Bareflank
 extensions work, please see the following:
 
 [API Documentation](http://bareflank.github.io/hypervisor/html/)
