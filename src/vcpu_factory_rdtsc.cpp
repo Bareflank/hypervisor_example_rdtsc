@@ -1,54 +1,58 @@
 //
-// Bareflank Hypervisor
-// Copyright (C) 2015 Assured Information Security, Inc.
+// Copyright (C) 2019 Assured Information Security, Inc.
 //
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 2.1 of the License, or (at your option) any later version.
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 //
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
-#include <bfbitmanip.h>
-#include <vcpu/vcpu_factory.h>
+#include <bfvmm/vcpu/vcpu_factory.h>
+#include <bfvmm/hve/arch/intel_x64/vcpu.h>
 
-#include <vcpu/vcpu_intel_x64.h>
-#include <vmcs/vmcs_intel_x64.h>
-#include <exit_handler/exit_handler_intel_x64.h>
+using namespace ::intel_x64::vmcs;
 
-class vmcs_rdtsc : public vmcs_intel_x64
+namespace example
+{
+namespace intel_x64
+{
+
+class vcpu : public bfvmm::intel_x64::vcpu
 {
 public:
 
-    vmcs_rdtsc() = default;
-    ~vmcs_rdtsc() = default;
-
-    void
-    write_fields(gsl::not_null<vmcs_intel_x64_state *> host_state,
-                 gsl::not_null<vmcs_intel_x64_state *> guest_state) override
+    vcpu(vcpuid::type id) :
+        bfvmm::intel_x64::vcpu{id}
     {
-        vmcs_intel_x64::write_fields(host_state, guest_state);
-        intel_x64::vmcs::primary_processor_based_vm_execution_controls::rdtsc_exiting::enable();
+        vmcs_n::primary_processor_based_vm_execution_controls::rdtsc_exiting::enable();
+
+        this->add_handler(
+            exit_reason::basic_exit_reason::rdtsc,
+            ::handler_delegate_t::create<vcpu, &vcpu::handle_rdtsc>(this)
+        );
+
+        this->add_handler(
+            exit_reason::basic_exit_reason::rdtscp,
+            ::handler_delegate_t::create<vcpu, &vcpu::handle_rdtscp>(this)
+        );
     }
-};
 
-class exit_handler_rdtsc : public exit_handler_intel_x64
-{
-public:
-
-    exit_handler_rdtsc() = default;
-    ~exit_handler_rdtsc() = default;
-
-    void handle_exit(intel_x64::vmcs::value_type reason) override
+    bool
+    handle_rdtsc(gsl::not_null<vcpu_t *> vcpu)
     {
-        using namespace intel_x64::vmcs::exit_reason;
+        bfignored(vcpu);
 
         // NOTE:
         //
@@ -57,42 +61,45 @@ public:
         // For more information, please see the pseudo code for these instructions in
         // the Intel SDM.
 
-        if (reason == basic_exit_reason::rdtsc) {
-            auto ret = x64::read_tsc::get();
-            m_state_save->rax = set_bits(m_state_save->rax, 0x00000000FFFFFFFF, ret >> 0);
-            m_state_save->rdx = set_bits(m_state_save->rdx, 0x00000000FFFFFFFF, ret >> 32);
+        auto ret = x64::read_tsc::get();
+        this->set_rax((ret >> 0) & 0x00000000FFFFFFFF);
+        this->set_rdx((ret >> 32) & 0x00000000FFFFFFFF);
 
-            advance_and_resume();
-        }
+        return this->advance();
+    }
 
-        if (reason == basic_exit_reason::rdtscp) {
-            auto ret = x64::read_tscp::get();
-            m_state_save->rax = set_bits(m_state_save->rax, 0x00000000FFFFFFFF, ret >> 0);
-            m_state_save->rdx = set_bits(m_state_save->rdx, 0x00000000FFFFFFFF, ret >> 32);
-            m_state_save->rcx = set_bits(m_state_save->rcx, 0x00000000FFFFFFFF, x64::msrs::ia32_tsc_aux::get());
+    bool
+    handle_rdtscp(gsl::not_null<vcpu_t *> vcpu)
+    {
+        bfignored(vcpu);
 
-            advance_and_resume();
-        }
+        // NOTE:
+        //
+        // For completeness, CR4.TSD, CPL and CR0.PE should all be checked, otherwise
+        // the execution of this instruction might bypass these checks by hardware.
+        // For more information, please see the pseudo code for these instructions in
+        // the Intel SDM.
 
-        exit_handler_intel_x64::handle_exit(reason);
+        auto ret = x64::read_tscp::get();
+        this->set_rax((ret >> 0) & 0x00000000FFFFFFFF);
+        this->set_rdx((ret >> 32) & 0x00000000FFFFFFFF);
+        this->set_rcx(x64::msrs::ia32_tsc_aux::get() & 0x00000000FFFFFFFF);
+
+        return this->advance();
     }
 };
 
-/// Custom VCPU.
-///
-/// This tells Bareflank to use our exit handler instead of the one
-/// that Bareflank provides by default.
-///
-std::unique_ptr<vcpu>
-vcpu_factory::make_vcpu(vcpuid::type vcpuid, user_data *data)
-{
-    bfignored(data);
+}
+}
 
-    return std::make_unique<vcpu_intel_x64>(
-               vcpuid,
-               nullptr,
-               std::make_unique<vmcs_rdtsc>(),
-               std::make_unique<exit_handler_rdtsc>(),
-               nullptr,
-               nullptr);
+namespace bfvmm
+{
+
+WEAK_SYM std::unique_ptr<vcpu>
+vcpu_factory::make(vcpuid::type vcpuid, bfobject *obj)
+{
+    bfignored(obj);
+    return std::make_unique<example::intel_x64::vcpu>(vcpuid);
+}
+
 }

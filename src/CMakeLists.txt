@@ -1,44 +1,30 @@
 #
-# Bareflank Hypervisor
-# Copyright (C) 2015 Assured Information Security, Inc.
+# Copyright (C) 2019 Assured Information Security, Inc.
 #
-# This library is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# This library is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# Lesser General Public License for more details.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-# You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 cmake_minimum_required(VERSION 3.6)
-project(eapis C CXX)
+project(example_vmm C CXX)
 
-include(${CMAKE_INSTALL_PREFIX}/cmake/CMakeGlobal_Project.txt)
-include(${CMAKE_INSTALL_PREFIX}/cmake/CMakeGlobal_Includes.txt)
+include(${SOURCE_CMAKE_DIR}/project.cmake)
+init_project()
 
-# ------------------------------------------------------------------------------
-# Targets
-# ------------------------------------------------------------------------------
-
-add_executable(example_vmm vcpu_factory_rdtsc.cpp)
-
-target_link_libraries(example_vmm -Wl,--whole-archive bfvmm_main -Wl,--no-whole-archive)
-target_link_libraries(example_vmm bfvmm_vcpu_factory)
-target_link_libraries(example_vmm bfvmm_vcpu)
-target_link_libraries(example_vmm bfvmm_vcpu_manager)
-target_link_libraries(example_vmm bfvmm_exit_handler)
-target_link_libraries(example_vmm bfvmm_vmcs)
-target_link_libraries(example_vmm bfvmm_vmxon)
-target_link_libraries(example_vmm bfvmm_memory_manager)
-target_link_libraries(example_vmm bfvmm_support)
-target_link_libraries(example_vmm bfvmm_serial)
-target_link_libraries(example_vmm bfvmm_debug_ring)
-target_link_libraries(example_vmm bfvmm_intrinsics)
-
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
+add_vmm_executable(example_vmm
+    SOURCES vcpu_factory_rdtsc.cpp
+)

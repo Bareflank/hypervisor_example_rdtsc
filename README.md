@@ -13,9 +13,10 @@ extensions work, please see the following:
 To setup our extension, run the following (assuming Linux):
 
 ```
-git clone -b dev https://github.com/Bareflank/hypervisor_example_rdtsc.git example
-mkdir example/build; cd example/build
-cmake ..
+git clone https://github.com/Bareflank/hypervisor
+git clone https://github.com/Bareflank/hypervisor_example_rdtsc.git
+mkdir build; cd build
+cmake ../hypervisor -DDEFAULT_VMM=example_vmm -DEXTENSION=../hypervisor_example_rdtsc
 make -j<# cores + 1>
 ```
 
