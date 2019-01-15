@@ -17,28 +17,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 cmake_minimum_required(VERSION 3.6)
-project(eapis C CXX)
+project(example_vmm C CXX)
 
-include(${CMAKE_INSTALL_PREFIX}/cmake/CMakeGlobal_Project.txt)
-include(${CMAKE_INSTALL_PREFIX}/cmake/CMakeGlobal_Includes.txt)
+include(${SOURCE_CMAKE_DIR}/project.cmake)
+init_project()
 
-# ------------------------------------------------------------------------------
-# Targets
-# ------------------------------------------------------------------------------
-
-add_executable(example_vmm vcpu_factory_rdtsc.cpp)
-
-target_link_libraries(example_vmm -Wl,--whole-archive bfvmm_main -Wl,--no-whole-archive)
-target_link_libraries(example_vmm bfvmm_vcpu_factory)
-target_link_libraries(example_vmm bfvmm_vcpu)
-target_link_libraries(example_vmm bfvmm_vcpu_manager)
-target_link_libraries(example_vmm bfvmm_exit_handler)
-target_link_libraries(example_vmm bfvmm_vmcs)
-target_link_libraries(example_vmm bfvmm_vmxon)
-target_link_libraries(example_vmm bfvmm_memory_manager)
-target_link_libraries(example_vmm bfvmm_support)
-target_link_libraries(example_vmm bfvmm_serial)
-target_link_libraries(example_vmm bfvmm_debug_ring)
-target_link_libraries(example_vmm bfvmm_intrinsics)
-
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
+add_vmm_executable(example_vmm
+    SOURCES vcpu_factory_rdtsc.cpp
+)

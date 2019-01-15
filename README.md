@@ -10,16 +10,21 @@ extensions work, please see the following:
 
 ## Compilation / Usage
 
-To setup our extension, run the following (assuming Linux):
-
+To setup our extension, first setup your directory structure.
+You should clone this repo into the directory containing the bareflank/hypervisor repo.
+Place a config.cmake (see bareflank/hypervisor/scripts/cmake/config/example_config.cmake) in the same directory and turn on the ENABLE_HYPERVISOR_EXAMPLE_RDTSC flag.
+In summary, to build:
 ```
-git clone -b dev https://github.com/Bareflank/hypervisor_example_rdtsc.git example
-mkdir example/build; cd example/build
-cmake ..
+git clone https://github.com/Bareflank/hypervisor.git
+cp ./hypervisor/scripts/cmake/config/example_config.cmake config.cmake
+vim config.cmake # set ENABLE_HYPVERVISOR_EXAMPLE_RDTSC to on
+git clone https://github.com/Bareflank/hypervisor_example_rdtsc.git
+mkdir build; cd build
+cmake ../hypervisor
 make -j<# cores + 1>
 ```
 
-To test out our extended version of Bareflank, run the following commands:
+To build the VMM driver, load it, and start it use the following:
 
 ```
 make driver_quick

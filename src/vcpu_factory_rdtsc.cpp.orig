@@ -32,14 +32,14 @@ public:
     vcpu(vcpuid::type id) : bfvmm::intel_x64::vcpu{id}
     {
         exit_handler()->add_handler(
-            exit_reason::basic_exit_reason::rdtscp,
-            ::handler_delegate_t::create<vcpu, &vcpu::handle_rdtscp_exit>(this)
+                    exit_reason::basic_exit_reason::rdtscp,
+                    ::handler_delegate_t::create<vcpu, &vcpu::handle_rdtscp_exit>(this)
         );
         exit_handler()->add_handler(
-            exit_reason::basic_exit_reason::rdtsc,
-            ::handler_delegate_t::create<vcpu, &vcpu::handle_rdtsc_exit>(this)
+                    exit_reason::basic_exit_reason::rdtsc,
+                    ::handler_delegate_t::create<vcpu, &vcpu::handle_rdtsc_exit>(this)
         );
-        primary_processor_based_vm_execution_controls::rdtsc_exiting::enable();
+		primary_processor_based_vm_execution_controls::rdtsc_exiting::enable();
     }
 
     bool handle_rdtsc_exit(gsl::not_null<bfvmm::intel_x64::vmcs *> vmcs)
